@@ -1,0 +1,7 @@
+{
+  "name": "FinDash Scanner",
+  "description": "A financial dashboard for scanning receipts, tracking sales and expenses, and reconciling with bank history using AI.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

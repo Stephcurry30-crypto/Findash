@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents a sale or expense transaction.",
+      "type": "object",
+      "properties": {
+        "Reference No.": { "type": "string", "description": "Unique reference number for the transaction." },
+        "Recipient": { "type": "string", "description": "The person or entity receiving or sending the money." },
+        "Amount": { "type": "string", "description": "The transaction amount as a string." },
+        "Date": { "type": "string", "format": "date", "description": "The date of the transaction (YYYY-MM-DD)." },
+        "Time": { "type": "string", "description": "The time of the transaction (HH:MM)." },
+        "Payment Method": { "type": "string", "description": "Method used for payment (e.g., Cash, Card)." },
+        "Bank": { "type": "string", "description": "The bank associated with the transaction." },
+        "Category": { "type": "string", "description": "The category of the transaction." },
+        "id": { "type": "string", "description": "Firestore document ID." }
+      },
+      "required": ["Reference No.", "Amount", "Date"]
+    }
+  },
+  "firestore": {
+    "/artifacts/default-app-id/users/{userId}/transactions": {
+      "schema": "Transaction",
+      "description": "Collection of sales transactions for a user."
+    },
+    "/artifacts/default-app-id/users/{userId}/expenses": {
+      "schema": "Transaction",
+      "description": "Collection of expense transactions for a user."
+    }
+  }
+}
