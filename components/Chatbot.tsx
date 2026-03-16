@@ -3,8 +3,6 @@ import { Transaction } from '../types';
 import { createFinancialChat } from '../services/geminiService';
 import { normalizeAmount, formatCurrency } from '../utils';
 import { Chat, GenerateContentResponse } from "@google/genai";
-import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Sparkles, Trash2, ChevronDown, Bot, User } from 'lucide-react';
 
 interface ChatbotProps {
     sales: Transaction[];
@@ -39,6 +37,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sales, expenses }) => {
         const totalExpenses = expenses.reduce((sum, e) => sum + normalizeAmount(e.Amount), 0);
         const profit = totalSales - totalExpenses;
         
+        // Serialize data for the AI to analyze specific entries
         const salesData = sales.map(s => 
             `[DATE: ${s.Date}] RECIPIENT: ${s.Recipient} | AMOUNT: ${s.Amount} | REF: ${s["Reference No."]} | BANK: ${s.Bank}`
         ).join('\n');
@@ -128,27 +127,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ sales, expenses }) => {
                     return newMsgs;
                 });
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Chat error", error);
-            setMessages(prev => [...prev, { role: 'model', text: `I'm having trouble connecting: ${error.message || "Unknown error"}. Please check your API key and connection.`, timestamp: new Date() }]);
+            setMessages(prev => [...prev, { role: 'model', text: "I'm having trouble connecting right now. Please try again later.", timestamp: new Date() }]);
         } finally {
             setIsTyping(false);
-        }
-    };
-
-    const clearChat = () => {
-        setMessages([]);
-        setHasInitialized(false);
-        if (isOpen) {
-            chatRef.current = createFinancialChat(financialContext);
-            setHasInitialized(true);
-            setMessages([
-                { 
-                    role: 'model', 
-                    text: "Chat cleared. How can I help you with your finances today?",
-                    timestamp: new Date()
-                }
-            ]);
         }
     };
 
@@ -158,7 +141,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ sales, expenses }) => {
 
     const renderContent = (text: string) => {
         let html = text
-            .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-blue-400">$1</span>')
+            .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-blue-300">$1</span>')
             .replace(/^\s*•\s(.*)$/gm, '<li class="ml-4 list-disc">$1</li>');
 
         if (html.includes('<li')) {
@@ -169,183 +152,136 @@ const Chatbot: React.FC<ChatbotProps> = ({ sales, expenses }) => {
     };
 
     return (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[60] flex flex-col items-end pointer-events-none">
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9, y: 20, transformOrigin: 'bottom right' }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="pointer-events-auto mb-4 w-[90vw] sm:w-[400px] h-[500px] sm:h-[650px] flex flex-col rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-2xl ring-1 ring-white/5"
-                    >
-                        {/* Atmospheric Background */}
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-                            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[80px] rounded-full" />
-                            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[80px] rounded-full" />
-                        </div>
-
-                        {/* Header */}
-                        <div className="px-6 py-4 border-b border-white/5 bg-white/5 backdrop-blur-xl flex justify-between items-center relative overflow-hidden">
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg transform rotate-3">
-                                        <Bot className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 border-2 border-[#0a0a0a] rounded-full" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-white text-sm tracking-tight">FinDash AI</h3>
-                                    <p className="text-[10px] text-blue-400 font-medium uppercase tracking-widest">Financial Expert</p>
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[60] flex flex-col items-end font-sans pointer-events-none">
+            {/* Chat Window */}
+            <div className={`pointer-events-auto transition-all duration-300 ease-out origin-bottom-right mb-4 ${isOpen ? 'opacity-100 scale-100 translate-y-0 h-[450px] sm:h-[600px]' : 'opacity-0 scale-95 translate-y-4 pointer-events-none h-0'}`}>
+                <div className="w-[85vw] sm:w-[360px] h-full rounded-[1.5rem] shadow-2xl flex flex-col overflow-hidden bg-[#1c1c1e] border border-white/10 ring-1 ring-white/5 relative">
+                    
+                    {/* Header */}
+                    <div className="px-5 py-4 border-b border-white/5 bg-[#2c2c2e]/50 backdrop-blur-md flex justify-between items-center z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white text-sm">FinDash AI</h3>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                    <p className="text-[10px] text-gray-400">Online</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button 
-                                    onClick={clearChat}
-                                    className="p-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-all active:scale-90"
-                                    title="Clear Chat"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                                <button 
-                                    onClick={() => setIsOpen(false)} 
-                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all active:scale-90"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                        </div>
+                        <button 
+                            onClick={() => setIsOpen(false)} 
+                            className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                        </button>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-black/20">
+                        {messages.map((msg, idx) => (
+                            <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-2 fade-in duration-300`}>
+                                <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                                    msg.role === 'user' 
+                                    ? 'bg-blue-600 text-white rounded-br-sm' 
+                                    : 'bg-[#2c2c2e] text-gray-200 rounded-bl-sm border border-white/5'
+                                }`}>
+                                    <div dangerouslySetInnerHTML={renderContent(msg.text)} />
+                                </div>
+                                <span className="text-[9px] text-gray-600 mt-1 px-1 opacity-70">
+                                    {formatMessageTime(msg.timestamp)}
+                                </span>
                             </div>
-                        </div>
+                        ))}
 
-                        {/* Messages */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                            {messages.map((msg, idx) => (
-                                <motion.div 
-                                    key={idx}
-                                    initial={{ opacity: 0, y: 10, x: msg.role === 'user' ? 10 : -10 }}
-                                    animate={{ opacity: 1, y: 0, x: 0 }}
-                                    className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-                                >
-                                    <div className={`w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center ${
-                                        msg.role === 'user' ? 'bg-white/10' : 'bg-blue-600/20'
-                                    }`}>
-                                        {msg.role === 'user' ? <User className="w-4 h-4 text-gray-300" /> : <Bot className="w-4 h-4 text-blue-400" />}
-                                    </div>
-                                    <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                                        <div className={`px-4 py-3 rounded-2xl text-[13.5px] leading-relaxed shadow-sm ${
-                                            msg.role === 'user' 
-                                            ? 'bg-blue-600 text-white rounded-tr-none' 
-                                            : 'bg-white/5 text-gray-200 rounded-tl-none border border-white/5'
-                                        }`}>
-                                            <div dangerouslySetInnerHTML={renderContent(msg.text)} />
-                                        </div>
-                                        <span className="text-[9px] text-gray-500 mt-1.5 font-medium uppercase tracking-tighter opacity-60">
-                                            {formatMessageTime(msg.timestamp)}
-                                        </span>
-                                    </div>
-                                </motion.div>
-                            ))}
-
-                            {isTyping && (
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="flex gap-3"
-                                >
-                                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 flex-shrink-0 flex items-center justify-center">
-                                        <Bot className="w-4 h-4 text-blue-400" />
-                                    </div>
-                                    <div className="bg-white/5 px-4 py-3 rounded-2xl rounded-tl-none border border-white/5 flex gap-1.5 items-center h-[40px]">
-                                        <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 0.6 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                                        <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                                        <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }} className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-                                    </div>
-                                </motion.div>
-                            )}
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Suggestions */}
-                        {messages.length < 3 && (
-                            <div className="px-6 pb-4 flex gap-2 overflow-x-auto no-scrollbar">
-                                {SUGGESTED_PROMPTS.map((prompt, i) => (
-                                    <motion.button
-                                        key={i}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => handleSend(prompt)}
-                                        className="whitespace-nowrap px-4 py-2 bg-white/5 hover:bg-blue-600/20 border border-white/10 rounded-2xl text-[11px] font-semibold text-gray-300 hover:text-blue-400 transition-all shadow-sm flex items-center gap-2"
-                                    >
-                                        <Sparkles className="w-3 h-3" />
-                                        {prompt}
-                                    </motion.button>
-                                ))}
+                        {isTyping && (
+                            <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2">
+                                <div className="bg-[#2c2c2e] px-4 py-3 rounded-2xl rounded-bl-sm border border-white/5 flex gap-1 items-center h-[40px]">
+                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-100"></span>
+                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-200"></span>
+                                </div>
                             </div>
                         )}
+                        <div ref={messagesEndRef} />
+                    </div>
 
-                        {/* Input */}
-                        <div className="p-4 bg-white/5 border-t border-white/5 backdrop-blur-3xl">
-                            <form 
-                                onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
-                                className="relative flex items-center bg-black/40 border border-white/10 rounded-2xl focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all group"
-                            >
-                                <input 
-                                    type="text" 
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    placeholder="Ask anything about your finances..."
-                                    className="flex-1 bg-transparent border-none pl-5 pr-12 py-4 text-sm text-white focus:ring-0 outline-none placeholder-gray-500"
-                                />
-                                <button 
-                                    type="submit" 
-                                    disabled={!input.trim() || isTyping}
-                                    className="absolute right-2 p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all disabled:opacity-0 disabled:scale-75 active:scale-90 shadow-lg shadow-blue-600/20"
+                    {/* Suggestions */}
+                    {messages.length < 3 && (
+                        <div className="px-4 pb-3 flex gap-2 overflow-x-auto no-scrollbar mask-gradient bg-black/20">
+                            {SUGGESTED_PROMPTS.map((prompt, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleSend(prompt)}
+                                    className="whitespace-nowrap px-3 py-1.5 bg-[#2c2c2e] hover:bg-blue-600 hover:text-white border border-white/10 rounded-full text-[11px] font-medium text-gray-300 transition-all active:scale-95 shadow-sm"
                                 >
-                                    <Send className="w-4 h-4" />
+                                    {prompt}
                                 </button>
-                            </form>
-                            <p className="text-[9px] text-center text-gray-600 mt-3 font-medium uppercase tracking-widest">Powered by FinDash AI Engine</p>
+                            ))}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
 
-            {/* Trigger Button */}
-            <motion.div 
-                className="pointer-events-auto"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-            >
+                    {/* Input */}
+                    <div className="p-3 bg-[#1c1c1e] border-t border-white/5 backdrop-blur-md">
+                        <form 
+                            onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
+                            className="relative flex items-center bg-black/40 border border-white/10 rounded-full focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all"
+                        >
+                            <input 
+                                type="text" 
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Message FinDash AI..."
+                                className="flex-1 bg-transparent border-none pl-4 pr-10 py-3 text-sm text-white focus:ring-0 outline-none placeholder-gray-500"
+                            />
+                            <button 
+                                type="submit" 
+                                disabled={!input.trim() || isTyping}
+                                className="absolute right-1.5 p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full transition-all disabled:opacity-0 disabled:scale-75 active:scale-90"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {/* Trigger Button - Pill Shape */}
+            <div className="pointer-events-auto">
                 <button 
                     onClick={() => setIsOpen(!isOpen)}
-                    className={`group flex items-center gap-3 px-6 py-4 rounded-full shadow-2xl transition-all duration-500 border border-white/10 relative overflow-hidden ${
+                    className={`group flex items-center gap-2 px-3 py-2.5 sm:px-5 sm:py-3.5 rounded-full shadow-2xl transition-all duration-300 active:scale-95 border border-white/10 ${
                         isOpen 
-                        ? 'bg-white/10 text-white backdrop-blur-xl' 
-                        : 'bg-blue-600 text-white shadow-blue-600/40'
+                        ? 'bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]' 
+                        : 'bg-blue-600 text-white hover:bg-blue-500 shadow-blue-600/30'
                     }`}
                 >
-                    {/* Glow effect for closed state */}
-                    {!isOpen && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    )}
-                    
                     {isOpen ? (
                         <>
-                            <X className="w-5 h-5" />
-                            <span className="font-bold text-sm tracking-tight">Close Assistant</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <span className="font-bold text-xs sm:text-sm">Close</span>
                         </>
                     ) : (
                         <>
                             <div className="relative">
-                                <MessageSquare className="w-5 h-5" />
-                                <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                                    <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                                </svg>
+                                <span className="absolute -top-1 -right-1 flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400 border-2 border-blue-600"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-green-400 border border-blue-600"></span>
                                 </span>
                             </div>
-                            <span className="font-bold text-sm tracking-tight">Ask FinDash AI</span>
+                            <span className="font-bold text-xs sm:text-sm">Ask AI</span>
                         </>
                     )}
                 </button>
-            </motion.div>
+            </div>
         </div>
     );
 };

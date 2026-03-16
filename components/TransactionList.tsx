@@ -364,9 +364,8 @@ const TransactionList: React.FC<TransactionListProps> = ({ userId, data, type })
                                             </div>
                                             
                                             <h3 className="text-white font-black text-xl sm:text-2xl tracking-tight mb-2">No {type} found</h3>
-                                            <p className="text-gray-500 text-xs sm:text-sm max-w-[280px] sm:max-w-md mx-auto leading-relaxed mb-8">
-                                                We couldn't find any records for this period.
-                                                <span className="block mt-1 sm:mt-0 sm:inline">Try adjusting your filters or scanning a new receipt.</span>
+                                            <p className="text-gray-500 text-xs sm:text-sm max-w-[280px] mx-auto leading-relaxed mb-8">
+                                                We couldn't find any records for this period. Try adjusting your filters or scanning a new receipt.
                                             </p>
 
                                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-[320px]">

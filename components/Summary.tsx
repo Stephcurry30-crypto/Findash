@@ -115,8 +115,8 @@ const Summary: React.FC<SummaryProps> = ({ sales, expenses }) => {
         try {
             const html = await generateInsights(totals.sales, totals.expenses, totals.profit, bankBalances);
             setInsights(html);
-        } catch (error: any) {
-            setInsights(`<p class="text-xs text-red-400">Analysis failed: ${error.message || "Unknown error"}</p>`);
+        } catch (error) {
+            setInsights('<p class="text-xs text-red-400">Failed to generate insights.</p>');
         } finally {
             setLoadingInsights(false);
         }

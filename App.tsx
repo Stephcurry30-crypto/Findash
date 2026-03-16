@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { auth, db } from './services/firebaseConfig';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, onSnapshot, getDocFromServer, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import AuthModal from './components/AuthModal';
 import SplashScreen from './components/SplashScreen';
 import Expenses from './components/Expenses';
@@ -12,59 +12,6 @@ import Sales from './components/Sales';
 import ProfileModal from './components/ProfileModal';
 import Chatbot from './components/Chatbot';
 import { Transaction, ViewState } from './types';
-import { handleFirestoreError, OperationType } from './services/firestoreUtils';
-
-interface ErrorBoundaryProps {
-    children: React.ReactNode;
-}
-
-interface ErrorBoundaryState {
-    hasError: boolean;
-    errorInfo: string | null;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    constructor(props: ErrorBoundaryProps) {
-        super(props);
-        this.state = { hasError: false, errorInfo: null };
-    }
-
-    static getDerivedStateFromError(error: any) {
-        return { hasError: true, errorInfo: error.message };
-    }
-
-    render() {
-        if (this.state.hasError) {
-            let details = null;
-            try {
-                details = JSON.parse(this.state.errorInfo || '');
-            } catch (e) {}
-
-            return (
-                <div className="fixed inset-0 z-[200] bg-[#0a0a0a] flex items-center justify-center p-6 text-center">
-                    <div className="max-w-md w-full space-y-6">
-                        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </div>
-                        <h2 className="text-2xl font-black text-white tracking-tight">Something went wrong</h2>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            {details ? `A database error occurred (${details.operationType} on ${details.path}). Please check your permissions or contact support.` : 'An unexpected error occurred. Please refresh the page.'}
-                        </p>
-                        <button 
-                            onClick={() => window.location.reload()}
-                            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-600/20"
-                        >
-                            Refresh Application
-                        </button>
-                    </div>
-                </div>
-            );
-        }
-        return this.props.children;
-    }
-}
 
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -86,21 +33,6 @@ const App: React.FC = () => {
         });
         return () => unsubscribe();
     }, []);
-
-    // Connection Test
-    useEffect(() => {
-        if (!user) return;
-        const testConnection = async () => {
-            try {
-                await getDocFromServer(doc(db, 'test', 'connection'));
-            } catch (error) {
-                if (error instanceof Error && error.message.includes('the client is offline')) {
-                    console.error("Please check your Firebase configuration.");
-                }
-            }
-        };
-        testConnection();
-    }, [user]);
 
     // Global Drag & Drop Listeners
     useEffect(() => {
@@ -158,15 +90,11 @@ const App: React.FC = () => {
         const unsubSales = onSnapshot(query(salesCol), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Transaction));
             setSalesData(data);
-        }, (error) => {
-            handleFirestoreError(error, OperationType.LIST, `artifacts/default-app-id/users/${user.uid}/transactions`);
         });
 
         const unsubExpenses = onSnapshot(query(expensesCol), (snapshot) => {
             const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Transaction));
             setExpensesData(data);
-        }, (error) => {
-            handleFirestoreError(error, OperationType.LIST, `artifacts/default-app-id/users/${user.uid}/expenses`);
         });
 
         return () => {
@@ -207,8 +135,7 @@ const App: React.FC = () => {
     }
 
     return (
-        <ErrorBoundary>
-            <div className="w-full max-w-7xl mx-auto transition-all duration-300 ease-in-out px-2 sm:px-4">
+        <div className="w-full max-w-7xl mx-auto transition-all duration-300 ease-in-out px-2 sm:px-4">
             {/* Profile Modal */}
             {showProfile && <ProfileModal user={user} onClose={() => setShowProfile(false)} />}
 
@@ -335,7 +262,6 @@ const App: React.FC = () => {
                 </main>
             </div>
         </div>
-        </ErrorBoundary>
     );
 };
 

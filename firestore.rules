@@ -1,42 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: artifacts/default-app-id/users/{userId}/transactions
-    // Document ID: auto-generated
-    // Fields:
-    //   - Reference No.: string (required)
-    //   - Amount: string (required)
-    //   - Date: string (required, YYYY-MM-DD)
-    //   - Recipient: string (optional)
-    //   - Time: string (optional)
-    //   - Payment Method: string (optional)
-    //   - Bank: string (optional)
-    //   - Category: string (optional)
-    //
-    // Collection: artifacts/default-app-id/users/{userId}/expenses
-    // Document ID: auto-generated
-    // Fields: Same as Transaction
-    //
-    // Collection: artifacts/default-app-id/users/{userId}/profile
-    // Document ID: details
-    // Fields:
-    //   - firstName: string
-    //   - lastName: string
-    //   - photoURL: string
-    //   - phoneNumber: string
-    //   - dob: string
-    //   - address: string
-    //   - city: string
-    //   - state: string
-    //   - country: string
-    //   - bio: string
-    //
-    // ===============================================================
-
     // Helper Functions
     function isAuthenticated() {
       return request.auth != null;
@@ -46,37 +10,19 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.email == "derrickbuhain@gmail.com" && request.auth.token.email_verified == true);
-    }
-
     function isValidTransaction(data) {
       return data.keys().hasAll(['Reference No.', 'Amount', 'Date']) &&
-             data['Reference No.'] is string && data['Reference No.'].size() < 100 &&
-             data.Amount is string && data.Amount.size() < 50 &&
-             data.Date is string && data.Date.size() < 20;
+             data['Reference No.'] is string &&
+             data.Amount is string &&
+             data.Date is string;
     }
 
-    function isValidProfile(data) {
-      return data.get('firstName', '') is string && data.get('firstName', '').size() < 100 &&
-             data.get('lastName', '') is string && data.get('lastName', '').size() < 100 &&
-             data.get('bio', '') is string && data.get('bio', '').size() < 1000;
+    match /artifacts/default-app-id/users/{userId}/transactions/{transactionId} {
+      allow read, write: if isOwner(userId);
     }
 
-    // Rules for Transactions and Expenses
-    match /artifacts/default-app-id/users/{userId}/{collectionName}/{docId} {
-      allow read, write: if isOwner(userId) || isAdmin();
-      
-      // Additional validation for writes
-      allow create, update: if (isOwner(userId) || isAdmin()) && 
-        (collectionName in ['transactions', 'expenses'] ? isValidTransaction(request.resource.data) : true) &&
-        (collectionName == 'profile' ? isValidProfile(request.resource.data) : true);
-    }
-
-    // Default deny
-    match /{allPaths=**} {
-      allow read, write: if false;
+    match /artifacts/default-app-id/users/{userId}/expenses/{expenseId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }

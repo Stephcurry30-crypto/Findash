@@ -5,7 +5,6 @@ import { Transaction } from '../types';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../services/firebaseConfig';
 import { collectionNameForView } from '../utils';
-import { handleFirestoreError, OperationType } from '../services/firestoreUtils';
 
 interface ScannerProps {
     userId: string;
@@ -72,7 +71,6 @@ const Scanner: React.FC<ScannerProps> = ({ userId, type, onSaveSuccess, external
                 try {
                     const base64 = await readFileAsBase64(file);
                     const rawBase64 = base64.split(',')[1];
-                    const mimeType = file.type || "image/jpeg";
                     const data = await scanReceiptImage(rawBase64);
                     
                     completedCount++;
@@ -92,10 +90,8 @@ const Scanner: React.FC<ScannerProps> = ({ userId, type, onSaveSuccess, external
                         Bank: bank,
                         type: type
                     } as Transaction;
-                } catch (err: any) {
+                } catch (err) {
                     console.error(`Error scanning file ${file.name}:`, err);
-                    const errorMsg = err.message || "Unknown error";
-                    setError(`Scan failed for ${file.name}: ${errorMsg}`);
                     completedCount++;
                     setCurrentFileIndex(completedCount);
                     setProgress((completedCount / imageFiles.length) * 100);
@@ -185,17 +181,12 @@ const Scanner: React.FC<ScannerProps> = ({ userId, type, onSaveSuccess, external
     const saveItems = async () => {
         if (scannedItems.length === 0) return;
         const batch = writeBatch(db);
-        const path = `artifacts/default-app-id/users/${userId}/${collectionNameForView(type)}`;
-        const colRef = collection(db, path);
+        const colRef = collection(db, `artifacts/default-app-id/users/${userId}/${collectionNameForView(type)}`);
         scannedItems.forEach(item => batch.set(doc(colRef), item));
-        try {
-            await batch.commit();
-            setScannedItems([]);
-            setShowReviewModal(false);
-            onSaveSuccess();
-        } catch (e) {
-            handleFirestoreError(e, OperationType.WRITE, path);
-        }
+        await batch.commit();
+        setScannedItems([]);
+        setShowReviewModal(false);
+        onSaveSuccess();
     };
 
     return (

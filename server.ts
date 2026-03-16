@@ -195,7 +195,7 @@ async function startServer() {
                 </p>
                 
                 <div style="text-align: center;">
-                  <a href="${process.env.APP_URL || 'https://ais-dev-kr2akqvkxpwndfaznrvgrg-19338263043.us-east1.run.app'}" class="button">Launch Dashboard</a>
+                  <a href="https://findash-scanner-92143806260.us-west1.run.app" class="button">Launch Dashboard</a>
                 </div>
               </div>
               

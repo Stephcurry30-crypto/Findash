@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { User, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebaseConfig';
-import { handleFirestoreError, OperationType } from '../services/firestoreUtils';
 
 interface ProfileModalProps {
     user: User;
@@ -63,7 +62,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose }) => {
                     }));
                 }
             } catch (e) {
-                handleFirestoreError(e, OperationType.GET, `artifacts/default-app-id/users/${user.uid}/profile/details`);
+                console.error("Error fetching profile", e);
             } finally {
                 setLoading(false);
             }
@@ -86,7 +85,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ user, onClose }) => {
             
             onClose();
         } catch (e) {
-            handleFirestoreError(e, OperationType.WRITE, `artifacts/default-app-id/users/${user.uid}/profile/details`);
+            console.error("Error saving profile", e);
+            alert("Failed to save profile changes. Please try again.");
         } finally {
             setSaving(false);
         }

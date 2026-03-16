@@ -45,7 +45,6 @@ const ReconcileView: React.FC<ReconcileViewProps> = ({ sales, expenses }) => {
                 reader.onload = (e) => resolve(e.target?.result as string);
             });
             const rawBase64 = base64.split(',')[1];
-            const mimeType = fileToScan.type || "image/jpeg";
             
             const bankDataRaw = await scanBankHistoryImage(rawBase64);
             
