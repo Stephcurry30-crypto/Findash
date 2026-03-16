@@ -1,8 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyC28MimC7FkljPUpPBrwM41ed79SP5OHX8" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const modelName = 'gemini-2.5-flash';
+const modelName = 'gemini-3-flash-preview';
 
 export const scanReceiptImage = async (base64Data: string): Promise<any> => {
     try {
